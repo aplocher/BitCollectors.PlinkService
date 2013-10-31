@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+	<Product Id="*" Name="PLink Service (BitCollectors)" Language="1033" Version="1.0.0.0" Manufacturer="BitCollectors" UpgradeCode="cf6e0e35-c1b1-4fb5-8059-f6c558c4dd93">
+		<Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+
+		<MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+		<MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="PlinkService.ico" SourceFile="..\..\..\BitCollectors.PlinkService.UI\PlinkService.ico" />
+    <Property Id="ARPPRODUCTICON" Value="PlinkService.ico" />
+    <Property Id="ARPHELPLINK" Value="http://www.bitcollectors.com/" />
+    
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch BitCollector Plink Service (UI)" />
+    <Property Id="WixShellExecTarget" Value="[INSTALLFOLDER]BitCollectors.PlinkService.UI.exe" />
+    <CustomAction Id="LaunchApplication" BinaryKey="WixCA" DllEntry="WixShellExec" Impersonate="yes" />
+
+    <Feature Id="ProductFeature" Title="BitCollectors Plink Service" Level="1" Absent="disallow">
+			<ComponentGroupRef Id="ProductComponents" />
+      <ComponentRef Id="ApplicationShortcut" />
+		</Feature>
+    <Feature Id="PlinkFeature" Title="Plink.exe v0.62" Level="1" Absent="allow">
+      <ComponentGroupRef Id="PlinkComponents" />      
+    </Feature>
+
+    <UIRef Id="WixUI_FeatureTree" />
+    <UIRef Id="WixUI_ErrorProgressText" />
+    <UI>
+      <Publish Dialog="ExitDialog"
+        Control="Finish"
+        Event="DoAction"
+        Value="LaunchApplication">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed</Publish>
+    </UI>
+	</Product>
+
+	<Fragment>
+		<Directory Id="TARGETDIR" Name="SourceDir">
+			<Directory Id="ProgramFilesFolder">
+				<Directory Id="INSTALLFOLDER" Name="BitCollectors.PlinkService" />
+			</Directory>
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="BitCollectors Plink Service"/>
+      </Directory>
+		</Directory>
+	</Fragment>
+
+  <Fragment>
+    <DirectoryRef Id="ApplicationProgramsFolder">
+      <Component Id="ApplicationShortcut">
+        <Shortcut Id="ApplicationStartMenuShortcut"
+                  Name="BitCollectors Plink Service (UI)"
+                  Description="Manage your SSH Tunnel settings and forwarders"
+                  Target="[INSTALLFOLDER]BitCollectors.PlinkService.UI.exe"
+                  WorkingDirectory="INSTALLFOLDER"/>
+
+        <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall"/>
+
+        <RegistryValue Root="HKCU" Key="Software\Microsoft\BitCollectors.PlinkService.Service" Name="installed" Type="integer" Value="1" KeyPath="yes"/>
+      </Component>
+    </DirectoryRef>
+  </Fragment>
+  
+	<Fragment>
+		<ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      <Component Id="RemotingLibraryComponent">
+        <File Source="$(var.BitCollectors.PlinkService.Remoting.TargetPath)" Vital="yes" />
+      </Component>
+      <Component Id="UiComponent">
+        <File Source="$(var.BitCollectors.PlinkService.UI.TargetPath)" Vital="yes" />
+      </Component>
+      <Component Id="ServiceComponent">
+        <File Source="$(var.BitCollectors.PlinkService.Service.TargetPath)" KeyPath="yes" Vital="yes" />
+        <File Name="App.config" Source="$(var.BitCollectors.PlinkService.Service.TargetDir)\BitCollectors.PlinkService.Service.exe.config" />
+        <ServiceInstall Name="BitCollectorsPlinkService" Id="BitCollectorsPlinkService" DisplayName="BitCollectors Plink Service" Account="LocalSystem" ErrorControl="normal" Type="ownProcess" Start="auto" Vital="yes" />
+        <ServiceControl Name="BitCollectorsPlinkService" Id="ServiceComponentControl" Start="install" Stop="both" Remove="uninstall" Wait="yes" />
+      </Component>
+		</ComponentGroup>
+    <ComponentGroup Id="PlinkComponents" Directory="INSTALLFOLDER">
+      <Component Id="PlinkExeComponent">
+        <File Id="PlinkExeFile" Source=".\ThirdParty\" Name="plink.exe" />
+        <!--<util:XmlFile Id="UpdateConfigPlinkPath" Action="setValue" ElementPath="//userSettings/BitCollectors.PlinkService.Service.Properties.Settings/PlinkExecutable/value"-->
+      </Component>
+    </ComponentGroup>
+	</Fragment>
+</Wix>
